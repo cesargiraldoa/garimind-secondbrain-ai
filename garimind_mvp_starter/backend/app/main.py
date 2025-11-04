@@ -1,16 +1,25 @@
+# backend/app/main.py
 from fastapi import FastAPI
-from .api.routes import router
-from .api.google import router as google_router
-from .api.microsoft import router as ms_router
-from .api.ai import router as ai_router  # 👈 IMPORTANTE
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="GariMind MVP API")
+# 👇 importa los routers de tu paquete api
+from app.api import routes as base_routes
+from app.api import google as google_routes
+from app.api import microsoft as ms_routes
+from app.api import ai as ai_routes
 
-app.include_router(router)
-app.include_router(google_router)
-app.include_router(ms_router)
-app.include_router(ai_router)  # 👈 IMPORTANTE
+app = FastAPI(title="GariMind Second Brain")
 
+# CORS sencillo (ajusta dominios si quieres)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],          # pon tus dominios frontend si deseas restringir
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --------- Health & Root ----------
 @app.get("/")
 def root():
     return {
@@ -18,3 +27,18 @@ def root():
         "docs": "/docs",
         "health": "/health",
     }
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+# --------- Registro de routers ----------
+# Rutas base (proyectos, tareas, recuerdos, daily-magnet, inbox, etc.)
+app.include_router(base_routes.router)
+
+# Integraciones
+app.include_router(google_routes.router)
+app.include_router(ms_routes.router)
+
+# Motor de razonamiento (OpenAI)
+app.include_router(ai_routes.router)
